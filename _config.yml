@@ -9,3 +9,17 @@ github_username:  huhr
 
 # Build settings
 markdown: kramdown
+
+comments :
+    provider : disqus    # 啟動的留言板服務，這邊就用預設即可
+    disqus :
+    short_name : panic    # 將內容替換成剛剛在disqus上申請的site name
+    livefyre :
+    site_id : 123
+    intensedebate :
+    account : 123abc
+    facebook :
+    appid : 123
+    num_posts: 5
+    width: 580
+    colorscheme: light
