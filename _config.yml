@@ -1,6 +1,6 @@
 title:            Panic
 description: >
-    好像写写技术blog，看起来会比较高大上的样子
+    start my way
 url:              # Site url.
 signoff:          # Your name.
 
@@ -10,7 +10,7 @@ links:
   - name:         Blog
     url:          /
   - name:         Email
-    url:          mailto:huhaoran@domob.cn
+    url:          mailto:domobhaoran@gmail.com
     external:     true
   - name:         GitHub
     url:          http://github.com/huhr
