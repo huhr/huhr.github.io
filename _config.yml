@@ -1,25 +1,23 @@
-# Site settings
-title: Panic
-email: huhaoran@domob.cn
-description: > # this means to ignore newlines until "baseurl:"
+title:            Panic
+description: >
     好像写写技术blog，看起来会比较高大上的样子
-baseurl: "" # the subpath of your site, e.g. /blog/
-url: "http://yourdomain.com" # the base hostname & protocol for your site
-github_username:  huhr
+url:              # Site url.
+signoff:          # Your name.
 
-# Build settings
-markdown: kramdown
-
-comments :
-    provider : disqus    # 啟動的留言板服務，這邊就用預設即可
-    disqus :
-    short_name : panic    # 將內容替換成剛剛在disqus上申請的site name
-    livefyre :
-    site_id : 123
-    intensedebate :
-    account : 123abc
-    facebook :
-    appid : 123
-    num_posts: 5
-    width: 580
-    colorscheme: light
+links:
+  - name:         About
+    url:          /about
+  - name:         Blog
+    url:          /
+  - name:         Email
+    url:          mailto:huhaoran@domob.cn
+    external:     true
+  - name:         GitHub
+    url:          http://github.com/huhr
+    external:     true
+highlighter:      pygments
+permalink:        pretty
+markdown:         redcarpet
+redcarpet:
+  extensions:
+    - smart

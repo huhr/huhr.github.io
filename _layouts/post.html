@@ -1,17 +1,28 @@
----
-layout: default
----
-<div class="post">
+<html>
+  <head>
+    <meta content='{{ page.title }} - {{ site.title }}' property='og:title' />
+    <title>{{ page.title }} - {{ site.title }}</title>
+    {% include head.html %}
+  </head>
+  <body>
+    {% include header.html %}
+    <div id='container'>
+      {% include links.html %}
+      {% include pages.html %}
+      <div class="content">
+        <section class='post'>
+          <h1 class="upcase">
+            <div class='date'>{{ page.date | date_to_string }}</div>
+            {{ page.title }}
+          </h1>
+          {{ content }}
 
-  <header class="post-header">
-    <h1 class="post-title">{{ page.title }}</h1>
-    <p class="post-meta">{{ page.date | date: "%b %-d, %Y" }}{% if page.author %} • {{ page.author }}{% endif %}{% if page.meta %} • {{ page.meta }}{% endif %}</p>
-  </header>
 
-  <article class="post-content">
-    {{ content }}
-  </article>
-
-  {% include comment.html  %}
-
-</div>
+          {% include signoff.html %}
+        </section>
+      </div>
+      {% include disqus.html %}
+    </div>
+    {% include footer.html %}
+  </body>
+</html>
