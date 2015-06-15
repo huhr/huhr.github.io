@@ -22,7 +22,7 @@ server，将每一个到来http request交给一个单独的PHP进程来处理�
 后端thrift server之间进行数据通信的时也需要创建thrift client，在代码实现时很自然的想到的全局变量，在server
 启动时创建了client，后续在各个协程里使用同一个实例，好在模块的QPS较低，没有触发异常，这里其实是共享了同一个
 socket实例，go的net.Conn本身是并发安全的，所以在read／write的时候不会有异常抛出，不过到了client层由于当前协
-程拿到的可能发送给其他携程数据，这时就会有
+程拿到的可能发送给其他协程数据，这时就会有
 	
 	out of sequence response
 抛出来了。
@@ -32,7 +32,7 @@ socket实例，go的net.Conn本身是并发安全的，所以在read／write的�
 观察业务server的状态。简单来说就是维护一个全局map，业务server对map进行操作，外部通过dm303服务访问到map中的
 数据从而了解server的状态。
 
-好了回到正题，最初在实现golang版本的dm303时，这个全局map忘记加锁，而map本身并不是thread safety，业务server
+好了回到正题，最初在实现golang版本的dm303时，这个全局map忘记加锁，而map本身并不是thread-safe，业务server
 对map进行并发操作时产生race condition，导致最终数据出现异常，后面发现这个问题之后，对map的操作增加了一层封
 装，将操作信息存入chan，再有单独的协程负责从chan中取出数据进行操作，从而避免了race condition的问题。
 
