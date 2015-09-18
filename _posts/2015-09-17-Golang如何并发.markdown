@@ -23,7 +23,7 @@ green threads的实现通常有三种模型：多个green threads运行在同一
 
 goroutine使用了第三种模型，也就是多个green threads运行在多个kernel threads上，既可以快速的进行context switch又可以很好的利用多核。显然缺点是调度策略会因此变得非常复杂。goroutine的实现使用work stealing算法，定义了MPG三个角色，分别代表kernel threads，processor和goroutine。
 
-![image](https://morsmachine.dk/syscall.jpg)
+![image](/images/syscall.jpg)
 
 P也可以理解为context，我们设置的GOMAXPROCS就是指的P的数量。P负责完成对G和M的调度。P维护了一个deque来存放可执行的G，进行调度时切换当前执行的G，从deque顶部取出下一个G继续执行。当G进行syscall阻塞时，不仅需要切换G，M也需要进行切换来保证P能够继续执行后面的G，当阻塞的G-M对就绪时会被重新调度执行。同时当P维护的所有的G执行结束后，会从别的P的deque的steal一半的G放入自己的deque中执行，这也就是为什么叫做work steal算法。
 
