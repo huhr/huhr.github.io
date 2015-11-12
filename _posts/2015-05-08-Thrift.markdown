@@ -1,0 +1,62 @@
+---
+layout: post
+title:  "Thrift"
+date:   2015-05-08 17:36:36
+categories: share
+---
+
+#### RPC如何实现
+程序里数据和过程是抽象出来的事物，我们操作数据对象时很少关心这个对象在内存里是如何用二进制表示
+而只关心这个数据对象对外表现出的规则。当我们想要把语言里提供的抽象的数据结构写到磁盘上时，就需
+要知道数据是如何被表示的，抽象的数据转化为具体的二进制表示的过程就叫序列化，逆过程称为反序列化，
+所以序列化是一个由抽象到具体的转化过程。相同的数据模型在不同的语言里的二进制表示往往也是不同的，
+但是我们可以定义一种语言无关的数据结构，数据对象被序列化为约定好的数据，这样通过序列化和反序列
+化过程，我们可以让两种不同的语言识别对方的数据结构。
+
+那怎么实现跨语言的函数调用呢。一种方式是类似在Go中调用c的程序的方式：Go语言编译器能够识别c程序，
+在编译时把c函数一同编译到可执行文件中。但是我们不能奢求Go编译器可以识别所有的语言，所以更通用的
+方式是在Go程序中将函数的参数准备好，通过Socket传递给c程序的函数执行，再将执行结果通过Socket返回
+给Go程序，这样不仅可以跨语言，还可以将程序部署在不同的机器上，实现远程调用。
+
+调用过程现在被分成了多个部分，我们要先定义好接口原型，确保通信的语言都能够支持这个接口原型；接下
+来需要定义序列化的数据格式，确保通信的语言都可以识别这种数据格式；然后就可以开始写代码了，实现序
+列化反序列化，Socket通信过程，以及定义的接口的实现。
+
+#### Thrift逻辑层次
+Thrift提供了进行RPC需要的大部分要素，包括了定义接口原型的语言，各种协议的序列化实现，各种协议的
+Socket通信实现以及通过接口原型能够生成各个种语言的处理（Processor）实现，而我们要做的仅仅是写写
+接口(Handler)实现。
+
+thrift抽象了四层逻辑结构，看起来跟TCP/IP协议结构很像。Transport层代表数据传输，进行I/O操作，可以
+是上面提到的Socket I/O也可以使磁盘文件I/O；Protocol层抽象了序列化和反序列化功能；Processor层抽象
+了上面提到的函数实现的逻辑；最后Server层负责整体的调度和控制。另外我们需要实现的函数逻辑在这里称
+为Handler也属于Processor层。
+
+那么如何运作的呢？Client也就是发起请求的一端，将请求信息经过Protocol层进行序列化，通过Transport
+层将数据数据发送出去；Server端从Transport层获取，在Protocol层进行反序列化，将数据交给Processor，
+在这层识别是要调用什么函数，并交给我们实现的handler执行，再将返回值进行序列化，写回Transport。
+
+#### Transport层:
+TStreamTransport和TSocket是直接建立在文件I/O和网络I/O上的数据Transport实现；TBufferedTransport在
+前两基础上封装增加的读写缓存，减少文件活着网络I/O的次数来提升性能；TFramedTransport则是封装了一套
+按帧传输的简单协议，不仅增加了缓存，还在每次传输的数据的头部增加了4个byte来保存本次传输的数据长度。
+Buffered和Framed区别不大，只不过在非阻塞的Server实现中（如java的TNonblockingServer和THsHaServer）
+只能使用Framed，用来判断数据是否就绪。
+
+thrift 0.9.1中one way类型的接口对Golang的支持存在一个bug。one way相当于一个远程异步调用，Server端
+只接收请求并处理但不会给Client返回值，也就是不需要往Transport写返回值，Client也会关闭socket。而这
+个版本的实现中Go Server在处理完one way的函数后还会继续往Transport写入数据，导致抛出异常：
+
+	Error while flushing write buffer of size 58 to transport, only wrote ...
+
+这个便是在Transport层抛出的，Server将返回值写入Socket的时候Client已经关闭Socket。
+
+#### Protocol层:
+@TODO
+
+#### Server层:    
+Server负责整体的调度。以Python的thrift库为例，最简单的TSimpleServer是串行处理请求；
+TThreadedServer则是将请求分配给单独的线程处理来实现并发；TThreadPoolServer使用线程
+池来消除创建线程带来的性能损耗；TForkingServer，TProcessPoolServer是对应进程实现；
+TNonblockingServer则是使用I/O多路复用来减少I/O阻塞，提升吞吐量。Go版本的Server实现
+则非常简单，请求交给协程处理就好了，轻松实现I/O多路复用。
