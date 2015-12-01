@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Thrift"
+title:  "Thrift的理解"
 date:   2015-05-08 17:36:36
 categories: share
 ---
@@ -20,7 +20,7 @@ thrift抽象了四层逻辑结构，看起来跟TCP/IP协议结构很像。Trans
 那么如何运作的呢？Client也就是发起请求的一端，将请求信息经过Protocol层进行序列化，通过Transport层将数据数据发送出去；Server端从Transport层获取数据，在Protocol层进行反序列化，将数据交给Processor，在这层识别是要调用什么函数，并交给我们实现的handler执行，再将返回值进行序列化，写回Transport。
 
 #### Transport层:
-TStreamTransport和TSocket是直接建立在文件I/O和网络I/O上的数据Transport实现；TBufferedTransport在前两基础上封装增加的读写缓存，减少文件活着网络I/O的次数来提升性能；TFramedTransport则是封装了一套按帧传输的简单协议，不仅增加了缓存，还在每次传输的数据的头部增加了4个byte来保存本次传输的数据长度。Buffered和Framed性能区别不大，只不过在非阻塞的Server实现中（如java的TNonblockingServer和THsHaServer）只能使用Framed，因为非阻塞的Server需要判断数据是否准备就绪。
+TStreamTransport和TSocket是直接建立在文件I/O和网络I/O上的数据Transport实现；TBufferedTransport在前两基础上封装增加的读写缓存，减少文件活着网络I/O的次数来提升性能；TFramedTransport则是封装了一套按帧传输的简单协议，不仅增加了缓存，还在每次传输的数据的头部增加了4个byte来保存本次传输的数据长度。Buffered和Framed性能区别不大，只不过在非阻塞的Server实现中（如java的TNonblockingServer）只能使用Framed，因为非阻塞的Server需要判断数据是否准备就绪。
 
 thrift 0.9.1中one way类型的接口对Golang的支持存在一个bug。one way相当于一个远程异步调用，Server端只接收请求并处理但不会给Client返回值，也就是不需要往Transport写返回值，Client也会关闭socket。而这个版本的实现中Go Server在处理完one way的函数后还会继续往Transport写入数据，导致抛出异常：
 
@@ -29,10 +29,10 @@ thrift 0.9.1中one way类型的接口对Golang的支持存在一个bug。one way
 这个便是在Transport层抛出的，Server将返回值写入Socket的时候Client已经关闭Socket。
 
 #### Protocol层:
-@TODO
+BinaryProtocl将数据转化为byte数组，i32变成4个byte；CompactProtocol是作为BinaryProtocol的升级版，序列化之后的数据更紧凑，处理速度也会更快；JsonProtocl则是将数据转化为json格式。
 
 #### Server层:    
-Server负责整体的调度。以Python的thrift库为例，最简单的TSimpleServer是串行处理请求；TThreadedServer则是将请求分配给单独的线程处理来实现并发；TThreadPoolServer使用线程池来消除创建线程带来的性能损耗；TForkingServer，TProcessPoolServer是对应进程实现；TNonblockingServer则是使用I/O多路复用来减少I/O阻塞，提升吞吐量。Go版本的Server实现则非常简单，请求交给协程处理就好了，轻松实现I/O多路复用。
+Server负责整体的调度。以Python的库为来说吧，最简单的SimpleServer是串行处理请求；ThreadedServer则是将请求分配给单独的线程处理来实现并发；ThreadPoolServer使用线程池来消除创建线程带来的性能损耗；ForkingServer，ProcessPoolServer是对应进程实现；NonblockingServer则是使用I/O多路复用来减少I/O阻塞，提升吞吐量。Go版本的Server实现则非常简单，请求交给协程处理就好了，轻松实现I/O多路复用。
 
 #### Finally
 利用RPC技术可以让后端更加模块化，逻辑上更加清晰。需要注意的是使用RPC来带的性能损耗以及随着RPC工具而引入的各种坑。
